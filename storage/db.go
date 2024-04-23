@@ -48,7 +48,3 @@ func OpenDB(options Options) (*DB, error) {
 	}
 	return db, nil
 }
-
-func openAllMemTables(options Options) ([]*memTable, error) {
-	return nil, nil
-}
