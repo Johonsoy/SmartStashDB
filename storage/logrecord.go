@@ -6,7 +6,12 @@ import (
 
 type LogRecordType = byte
 
-const MaxLogRecordLength = 1 + binary.MaxVarintLen64*2
+const (
+	LogRecordNormal = iota
+	LogRecordDeleted
+	LogRecordBatchEnd
+	MaxLogRecordLength = 1 + binary.MaxVarintLen64*2
+)
 
 type LogRecord struct {
 	Key     []byte
