@@ -6,7 +6,7 @@ import (
 
 type LogRecordType = byte
 
-const MAX_LOG_RECORD_LENGTH = 1 + binary.MaxVarintLen64*2
+const MaxLogRecordLength = 1 + binary.MaxVarintLen64*2
 
 type LogRecord struct {
 	Key     []byte
@@ -21,7 +21,7 @@ func NewLogRecord(key []byte, value []byte, batchId uint64) *LogRecord {
 
 // Encode Serialize LogRecord, header + batchId + keySize + valueSize + key + value /*
 func (logRecord *LogRecord) Encode() []byte {
-	header := make([]byte, MAX_LOG_RECORD_LENGTH)
+	header := make([]byte, MaxLogRecordLength)
 	header[0] = logRecord.Type
 
 	index := 1
