@@ -21,6 +21,8 @@ type memTable struct {
 	mu sync.RWMutex
 
 	skl *skl.Skiplist
+
+	tinyWal *TinyWAL
 }
 
 type memTableOptions struct {
@@ -100,10 +102,17 @@ func (mt *memTable) get(key []byte) (bool, []byte) {
 	return deleted, valueStruct.Value
 }
 
+func (mt *memTable) isFull() bool {
+	return mt.skl.MemSize() >= int64(mt.option.sklMemSize)
+}
+
 func (mt *memTable) putBatch() error {
 	return nil
 }
 
 func (mt *memTable) close() error {
+	if mt.skl != nil {
+		return mt.tinyWal.close()
+	}
 	return nil
 }
