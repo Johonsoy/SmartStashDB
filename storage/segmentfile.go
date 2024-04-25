@@ -30,5 +30,9 @@ func segmentFileName(dir, ext string, id uint32) string {
 }
 
 func openSegmentFile(dir string, ext string, id uint32, localCache *lru.Cache[uint32, []byte]) {
-	os.OpenFile(segmentFileName(dir, ext, id), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	file, err := os.OpenFile(segmentFileName(dir, ext, id), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+
+	if err != nil {
+		return
+	}
 }
