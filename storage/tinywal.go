@@ -1,9 +1,5 @@
 package storage
 
-import (
-	"SmartStashDB/tinywal"
-	"sync"
-)
 
 type TinyWAL struct {
 	option        Options
