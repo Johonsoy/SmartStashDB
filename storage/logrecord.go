@@ -20,7 +20,7 @@ type LogRecord struct {
 	BatchId uint64
 }
 
-func NewLogRecord(key []byte, value []byte, batchId uint64) *LogRecord {
+func NewLogRecord() *LogRecord {
 	return &LogRecord{}
 }
 

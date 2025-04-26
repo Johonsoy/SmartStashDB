@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/bwmarrin/snowflake"
 	"github.com/dgraph-io/badger/skl"
 	"github.com/dgraph-io/badger/y"
 	"os"
@@ -106,7 +107,42 @@ func (mt *memTable) isFull() bool {
 	return mt.skl.MemSize() >= int64(mt.option.sklMemSize)
 }
 
-func (mt *memTable) putBatch() error {
+func (mt *memTable) putBatch(records map[string]*LogRecord, batchId snowflake.ID, options *WriteOptions) error {
+	if options == nil || options.DisableWal {
+		for _, record := range records {
+			record.BatchId = uint64(batchId)
+			if err := mt.tinyWal.PendingWrites(record.Encode()); err != nil {
+				return err
+			}
+		}
+		record := NewLogRecord()
+		record.Key = batchId.Bytes()
+		record.Type = LogRecordBatchEnd
+
+		if err := mt.tinyWal.PendingWrites(record.Encode()); err != nil {
+			return err
+		}
+
+		if err := mt.tinyWal.WriteAll(); err != nil {
+			return err
+		}
+
+		if options != nil && options.Sync && mt.option.walIsSync {
+			if err := mt.tinyWal.Sync(); err != nil {
+				return err
+			}
+		}
+	}
+
+	mt.mu.Lock()
+	for key, record := range records {
+		mt.skl.Put(y.KeyWithTs([]byte(key), 0),
+			y.ValueStruct{
+				Meta:  record.Type,
+				Value: record.Value,
+			})
+	}
+	mt.mu.Unlock()
 	return nil
 }
 

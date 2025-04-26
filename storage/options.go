@@ -31,3 +31,8 @@ func tempDBDir() string {
 	temp, _ := os.MkdirTemp("", "db-temp")
 	return temp
 }
+
+type WriteOptions struct {
+	Sync       bool
+	DisableWal bool
+}

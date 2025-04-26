@@ -19,7 +19,7 @@ func main() {
 	}()
 	key := "adasdsa"
 	value := "asdbsadsd"
-	err = db.Put(key, value, options)
+	err = db.Put(key, value, nil)
 	if err != nil {
 		panic(err)
 	}

@@ -10,7 +10,7 @@ import (
 
 type SegmentFileId = uint32
 
-type segmentFile struct {
+type SegmentFile struct {
 	segmentFileId SegmentFileId
 
 	fd *os.File
@@ -30,7 +30,7 @@ func segmentFileName(dir, ext string, id uint32) string {
 	return filepath.Join(dir, fmt.Sprintf("%010d"+ext, id))
 }
 
-func openSegmentFile(dir string, ext string, id uint32, localCache *lru.Cache[uint32, []byte]) (*segmentFile, error) {
+func openSegmentFile(dir string, ext string, id uint32, localCache *lru.Cache[uint32, []byte]) (*SegmentFile, error) {
 	file, err := os.OpenFile(segmentFileName(dir, ext, id), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func openSegmentFile(dir string, ext string, id uint32, localCache *lru.Cache[ui
 
 	size := stat.Size()
 
-	return &segmentFile{
+	return &SegmentFile{
 		segmentFileId:  id,
 		fd:             file,
 		lastBlockIndex: uint32(size / _const.BlockSize),
@@ -52,7 +52,7 @@ func openSegmentFile(dir string, ext string, id uint32, localCache *lru.Cache[ui
 	}, nil
 }
 
-func (sf *segmentFile) Close() error {
+func (sf *SegmentFile) Close() error {
 	if sf.closed {
 		return nil
 	}
@@ -61,7 +61,7 @@ func (sf *segmentFile) Close() error {
 	return sf.fd.Close()
 }
 
-func (sf *segmentFile) Sync() error {
+func (sf *SegmentFile) Sync() error {
 	if sf.closed {
 		return nil
 	}

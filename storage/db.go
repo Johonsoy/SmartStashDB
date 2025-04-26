@@ -38,7 +38,7 @@ func (db *DB) Close() error {
 	return nil
 }
 
-func (db *DB) Put(key string, value string, options Options) error {
+func (db *DB) Put(key string, value string, options *WriteOptions) error {
 	batch := db.batchPool.Get().(*Batch)
 	defer func() {
 		batch.reset()
@@ -47,10 +47,25 @@ func (db *DB) Put(key string, value string, options Options) error {
 	batch.init(false, false, db).writePendingWrites()
 	err := batch.put([]byte(key), []byte(value))
 	if err != nil {
-		batch.unblock()
+		batch.unLock()
 		return err
 	}
-	return batch.commit()
+	return batch.commit(options)
+}
+
+func (db *DB) waitMemTableSpace() error {
+	if db.activeMem.isFull() {
+		return nil
+	}
+	db.immutableMem = append(db.immutableMem, db.activeMem)
+	option := db.activeMem.option
+	option.id++
+	table, err := openMemTable(option)
+	if err != nil {
+		return err
+	}
+	db.activeMem = table
+	return nil
 }
 
 func OpenDB(options Options) (*DB, error) {

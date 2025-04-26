@@ -1,6 +1,9 @@
 package storage
 
-import "sync"
+import (
+	_const "SmartStashDB/const"
+	"sync"
+)
 import "github.com/bwmarrin/snowflake"
 
 func makeBatch() interface{} {
@@ -37,14 +40,67 @@ func (batch *Batch) writePendingWrites() *Batch {
 	return batch
 }
 
-func (batch *Batch) put(bytes []byte, bytes2 []byte) error {
+func (batch *Batch) put(key []byte, value []byte) error {
+	if len(key) == 0 {
+		return _const.ErrorKeyIsEmpty
+	}
+
+	if batch.db.closed {
+		return _const.ErrorDBClosed
+	}
+
+	if batch.options.ReadOnly {
+		return _const.ErrorReadOnlyBatch
+	}
+	batch.m.Lock()
+	defer batch.m.Unlock()
+	batch.pendingWrites[string(key)] = &LogRecord{
+		Key:   key,
+		Value: value,
+		Type:  LogRecordNormal,
+	}
 	return nil
 }
 
-func (batch *Batch) unblock() {
+func (batch *Batch) unLock() {
+	if batch.options.ReadOnly {
+		batch.m.RUnlock()
+	} else {
+		batch.m.Unlock()
+	}
 
 }
 
-func (batch *Batch) commit() error {
+func (batch *Batch) commit(w *WriteOptions) error {
+	if w == nil {
+		w = &WriteOptions{
+			Sync:       false,
+			DisableWal: false,
+		}
+	}
+	defer batch.unLock()
+	if batch.db.closed {
+		return _const.ErrorDBClosed
+	}
+
+	if batch.options.ReadOnly || len(batch.pendingWrites) == 0 {
+		return nil
+	}
+
+	batch.m.Lock()
+	defer batch.m.Unlock()
+	if batch.commited {
+		return _const.ErrorBatchCommited
+	}
+
+	if err := batch.db.waitMemTableSpace(); err != nil {
+		return err
+	}
+
+	batchId := batch.batchId.Generate()
+	if err := batch.db.activeMem.putBatch(batch.pendingWrites, batchId, w); err != nil {
+		return err
+	}
+	batch.commited = true
 	return nil
 }

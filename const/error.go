@@ -1,0 +1,12 @@
+package _const
+
+import "errors"
+
+var (
+	ErrDatabaseIsUsing = errors.New("the database directory is used by another process")
+	ErrorDBClosed      = errors.New("the database is closed")
+	ErrorReadOnlyBatch = errors.New("the read-only batch exists")
+	ErrorBatchCommited = errors.New("the batch commited")
+)
+
+var ErrorKeyIsEmpty = errors.New("the key is empty")
