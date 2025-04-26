@@ -21,7 +21,7 @@ type DB struct {
 	batchPool sync.Pool
 }
 
-func (db *DB) close() error {
+func (db *DB) Close() error {
 	db.m.Lock()
 	defer db.m.Unlock()
 
@@ -36,6 +36,21 @@ func (db *DB) close() error {
 	}
 	db.closed = true
 	return nil
+}
+
+func (db *DB) Put(key string, value string, options Options) error {
+	batch := db.batchPool.Get().(*Batch)
+	defer func() {
+		batch.reset()
+		db.batchPool.Put(batch)
+	}()
+	batch.init(false, false, db).writePendingWrites()
+	err := batch.put([]byte(key), []byte(value))
+	if err != nil {
+		batch.unblock()
+		return err
+	}
+	return batch.commit()
 }
 
 func OpenDB(options Options) (*DB, error) {

@@ -13,6 +13,12 @@ type Options struct {
 	BlockCache   uint32
 }
 
+type BatchOptions struct {
+	options  []*Options
+	ReadOnly bool
+	Sync     bool
+}
+
 var DefaultOptions = Options{
 	DirPath:      tempDBDir(),
 	MemTableSize: 64 * _const.MB,

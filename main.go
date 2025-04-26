@@ -15,7 +15,13 @@ func main() {
 		panic(err)
 	}
 	defer func() {
-		_ = db.close()
+		_ = db.Close()
 	}()
+	key := "adasdsa"
+	value := "asdbsadsd"
+	err = db.Put(key, value, options)
+	if err != nil {
+		panic(err)
+	}
 
 }
