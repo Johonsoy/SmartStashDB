@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"SmartStashDB"
+	"errors"
 	"github.com/gofrs/flock"
 	"os"
 	"path/filepath"
@@ -14,11 +14,28 @@ const (
 
 type DB struct {
 	m            sync.RWMutex
-	activeMem    *memTable // Active memory
-	immutableMem *memTable // Immutable memory
+	activeMem    *memTable   // Active memory
+	immutableMem []*memTable // Immutable memory
 	closed       bool
 
 	batchPool sync.Pool
+}
+
+func (db *DB) close() error {
+	db.m.Lock()
+	defer db.m.Unlock()
+
+	for _, table := range db.immutableMem {
+		err := table.close()
+		if err != nil {
+			return err
+		}
+	}
+	if err := db.activeMem.close(); err != nil {
+		return err
+	}
+	db.closed = true
+	return nil
 }
 
 func OpenDB(options Options) (*DB, error) {
@@ -34,7 +51,7 @@ func OpenDB(options Options) (*DB, error) {
 		return nil, err
 	}
 	if !lock {
-		return nil, SmartStashDB.ErrDatabaseIsUsing
+		return nil, errors.New("file locked")
 	}
 
 	memTables, err := openAllMemTables(options)
@@ -43,7 +60,7 @@ func OpenDB(options Options) (*DB, error) {
 	}
 	db := &DB{
 		activeMem:    memTables[len(memTables)-1],
-		immutableMem: memTables[len(memTables)-1],
+		immutableMem: memTables,
 		batchPool:    sync.Pool{New: makeBatch},
 	}
 	return db, nil
