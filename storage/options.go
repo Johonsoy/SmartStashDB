@@ -14,7 +14,6 @@ type Options struct {
 }
 
 type BatchOptions struct {
-	options  []*Options
 	ReadOnly bool
 	Sync     bool
 }
@@ -25,6 +24,11 @@ var DefaultOptions = Options{
 	BlockCache:   0,
 	Sync:         false,
 	BytesPerSync: 0,
+}
+
+var DefaultBatchOptions = BatchOptions{
+	ReadOnly: false,
+	Sync:     true,
 }
 
 func tempDBDir() string {

@@ -7,7 +7,15 @@ import (
 import "github.com/bwmarrin/snowflake"
 
 func makeBatch() interface{} {
-	return nil
+	node, err := snowflake.NewNode(1)
+	if err != nil {
+		panic(err)
+	}
+	return &Batch{
+		options: DefaultBatchOptions,
+		m:       sync.RWMutex{},
+		batchId: node,
+	}
 }
 
 type Batch struct {

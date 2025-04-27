@@ -79,7 +79,7 @@ func openAllMemTables(options Options) ([]*MemTable, error) {
 		tables[i] = table
 	}
 
-	return nil, nil
+	return tables, nil
 }
 
 func openMemTable(options memTableOptions) (*MemTable, error) {
