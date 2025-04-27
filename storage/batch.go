@@ -40,7 +40,11 @@ func (batch *Batch) init(readOnly bool, sync bool, db *DB) *Batch {
 }
 
 func (batch *Batch) lock() {
-
+	if batch.options.ReadOnly {
+		batch.db.m.RLock()
+	} else {
+		batch.db.m.Lock()
+	}
 }
 
 func (batch *Batch) writePendingWrites() *Batch {
@@ -72,9 +76,9 @@ func (batch *Batch) put(key []byte, value []byte) error {
 
 func (batch *Batch) unLock() {
 	if batch.options.ReadOnly {
-		batch.m.RUnlock()
+		batch.db.m.RUnlock()
 	} else {
-		batch.m.Unlock()
+		batch.db.m.Unlock()
 	}
 
 }
