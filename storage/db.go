@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	fileLockName = "FLOCK"
+	FileLockName = "FLOCK"
 )
 
 type DB struct {
 	m            sync.RWMutex
-	activeMem    *memTable   // Active memory
-	immutableMem []*memTable // Immutable memory
-	closed       bool
+	activeMem    *MemTable   // Active memory
+	immutableMem []*MemTable // Immutable memory
+	Closed       bool
 
-	batchPool sync.Pool
+	BatchPool sync.Pool
 }
 
 func (db *DB) Close() error {
@@ -34,15 +34,15 @@ func (db *DB) Close() error {
 	if err := db.activeMem.close(); err != nil {
 		return err
 	}
-	db.closed = true
+	db.Closed = true
 	return nil
 }
 
 func (db *DB) Put(key string, value string, options *WriteOptions) error {
-	batch := db.batchPool.Get().(*Batch)
+	batch := db.BatchPool.Get().(*Batch)
 	defer func() {
 		batch.reset()
-		db.batchPool.Put(batch)
+		db.BatchPool.Put(batch)
 	}()
 	batch.init(false, false, db).writePendingWrites()
 	err := batch.put([]byte(key), []byte(value))
@@ -76,7 +76,7 @@ func OpenDB(options Options) (*DB, error) {
 			return nil, err
 		}
 	}
-	lock, err := flock.New(filepath.Join(options.DirPath, fileLockName)).TryLock()
+	lock, err := flock.New(filepath.Join(options.DirPath, FileLockName)).TryLock()
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func OpenDB(options Options) (*DB, error) {
 	db := &DB{
 		activeMem:    memTables[len(memTables)-1],
 		immutableMem: memTables,
-		batchPool:    sync.Pool{New: makeBatch},
+		BatchPool:    sync.Pool{New: makeBatch},
 	}
 	return db, nil
 }

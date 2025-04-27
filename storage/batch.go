@@ -45,7 +45,7 @@ func (batch *Batch) put(key []byte, value []byte) error {
 		return _const.ErrorKeyIsEmpty
 	}
 
-	if batch.db.closed {
+	if batch.db.Closed {
 		return _const.ErrorDBClosed
 	}
 
@@ -79,7 +79,7 @@ func (batch *Batch) commit(w *WriteOptions) error {
 		}
 	}
 	defer batch.unLock()
-	if batch.db.closed {
+	if batch.db.Closed {
 		return _const.ErrorDBClosed
 	}
 

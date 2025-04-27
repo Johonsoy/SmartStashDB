@@ -16,7 +16,7 @@ const (
 	walFileExt = ".MEM.%d"
 )
 
-type memTable struct {
+type MemTable struct {
 	option memTableOptions
 
 	mu sync.RWMutex
@@ -35,7 +35,7 @@ type memTableOptions struct {
 	walBytesPerSync uint32 // how bytes to flush the disk.
 }
 
-func openAllMemTables(options Options) ([]*memTable, error) {
+func openAllMemTables(options Options) ([]*MemTable, error) {
 	dir, err := os.ReadDir(options.DirPath)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func openAllMemTables(options Options) ([]*memTable, error) {
 
 	sort.Ints(tableIds)
 
-	tables := make([]*memTable, len(tableIds))
+	tables := make([]*MemTable, len(tableIds))
 
 	for i, id := range tableIds {
 		table, err := openMemTable(memTableOptions{
@@ -82,10 +82,10 @@ func openAllMemTables(options Options) ([]*memTable, error) {
 	return nil, nil
 }
 
-func openMemTable(options memTableOptions) (*memTable, error) {
+func openMemTable(options memTableOptions) (*MemTable, error) {
 	skipList := skl.NewSkiplist(int64(options.sklMemSize * 2))
 
-	table := &memTable{
+	table := &MemTable{
 		option: options,
 		skl:    skipList,
 	}
@@ -93,7 +93,7 @@ func openMemTable(options memTableOptions) (*memTable, error) {
 	return table, nil
 }
 
-func (mt *memTable) get(key []byte) (bool, []byte) {
+func (mt *MemTable) get(key []byte) (bool, []byte) {
 	mt.mu.RLock()
 	defer mt.mu.RUnlock()
 
@@ -103,11 +103,11 @@ func (mt *memTable) get(key []byte) (bool, []byte) {
 	return deleted, valueStruct.Value
 }
 
-func (mt *memTable) isFull() bool {
+func (mt *MemTable) isFull() bool {
 	return mt.skl.MemSize() >= int64(mt.option.sklMemSize)
 }
 
-func (mt *memTable) putBatch(records map[string]*LogRecord, batchId snowflake.ID, options *WriteOptions) error {
+func (mt *MemTable) putBatch(records map[string]*LogRecord, batchId snowflake.ID, options *WriteOptions) error {
 	if options == nil || options.DisableWal {
 		for _, record := range records {
 			record.BatchId = uint64(batchId)
@@ -146,7 +146,7 @@ func (mt *memTable) putBatch(records map[string]*LogRecord, batchId snowflake.ID
 	return nil
 }
 
-func (mt *memTable) close() error {
+func (mt *MemTable) close() error {
 	if mt.skl != nil {
 		return mt.tinyWal.close()
 	}
