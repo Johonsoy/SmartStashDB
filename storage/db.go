@@ -18,7 +18,7 @@ type DB struct {
 	immutableMem []*MemTable // Immutable memory
 	Closed       bool
 
-	BatchPool sync.Pool
+	batchPool sync.Pool
 }
 
 func (db *DB) Close() error {
@@ -39,10 +39,10 @@ func (db *DB) Close() error {
 }
 
 func (db *DB) Put(key string, value string, options *WriteOptions) error {
-	batch := db.BatchPool.Get().(*Batch)
+	batch := db.batchPool.Get().(*Batch)
 	defer func() {
 		batch.reset()
-		db.BatchPool.Put(batch)
+		db.batchPool.Put(batch)
 	}()
 	batch.init(false, false, db).writePendingWrites()
 	err := batch.put([]byte(key), []byte(value))
@@ -68,6 +68,17 @@ func (db *DB) waitMemTableSpace() error {
 	return nil
 }
 
+func (db *DB) Get(key string) ([]byte, error) {
+	batch := db.batchPool.Get().(*Batch)
+	batch.init(true, false, db)
+	defer func() {
+		_ = batch.commit(nil)
+		batch.reset()
+		db.batchPool.Put(batch)
+	}()
+	return batch.Get([]byte(key))
+}
+
 func OpenDB(options Options) (*DB, error) {
 
 	// Check if file existed.
@@ -91,7 +102,7 @@ func OpenDB(options Options) (*DB, error) {
 	db := &DB{
 		activeMem:    memTables[len(memTables)-1],
 		immutableMem: memTables,
-		BatchPool:    sync.Pool{New: makeBatch},
+		batchPool:    sync.Pool{New: makeBatch},
 	}
 	return db, nil
 }

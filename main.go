@@ -24,4 +24,6 @@ func main() {
 		panic(err)
 	}
 
+	db.Get(key)
+
 }

@@ -116,3 +116,8 @@ func (batch *Batch) commit(w *WriteOptions) error {
 	batch.commited = true
 	return nil
 }
+
+func (batch *Batch) Get(bytes []byte) ([]byte, error) {
+	//TODO(johnsoy)
+	return nil, nil
+}
