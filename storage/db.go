@@ -88,7 +88,13 @@ func (db *DB) Delete(key []byte) error {
 	if len(key) == 0 {
 		return _const.ErrorKeyIsEmpty
 	}
-	return nil
+	batch := db.batchPool.Get().(*Batch)
+	batch.init(false, false, db)
+	defer func() {
+		batch.reset()
+		db.batchPool.Put(batch)
+	}()
+	return batch.delete(key)
 }
 
 func OpenDB(options Options) (*DB, error) {

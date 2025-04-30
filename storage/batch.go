@@ -151,3 +151,8 @@ func (batch *Batch) Get(key []byte) ([]byte, error) {
 
 	return nil, _const.ErrorKeyNotFound
 }
+
+func (batch *Batch) delete(key []byte) error {
+
+	return nil
+}
