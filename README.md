@@ -145,6 +145,6 @@ SmartStashDB is licensed under the [MIT License](LICENSE). Feel free to use, mod
 ## 📫 Contact
 
 - **GitHub**: [Johnsoy](https://github.com/Johonsoy)
-- **Email**: [155207547672163.com]
+- **Email**: [15520754767@163.com]
 
 Star ⭐ this repo if you find SmartStashDB awesome, and let's build the fastest KV store together! 🚀
