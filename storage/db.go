@@ -1,6 +1,7 @@
 package storage
 
 import (
+	_const "SmartStashDB/const"
 	"errors"
 	"github.com/gofrs/flock"
 	"os"
@@ -81,6 +82,13 @@ func (db *DB) Get(key string) ([]byte, error) {
 
 func (db *DB) getMemTables() []*MemTable {
 	return db.immutableMem
+}
+
+func (db *DB) Delete(key []byte) error {
+	if len(key) == 0 {
+		return _const.ErrorKeyIsEmpty
+	}
+	return nil
 }
 
 func OpenDB(options Options) (*DB, error) {

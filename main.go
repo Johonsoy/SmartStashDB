@@ -29,4 +29,7 @@ func main() {
 		panic(err)
 	}
 	print(string(newValue))
+
+	db.Delete([]byte(key))
+
 }
