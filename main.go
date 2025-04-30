@@ -24,6 +24,9 @@ func main() {
 		panic(err)
 	}
 
-	db.Get(key)
-
+	newValue, err := db.Get(key)
+	if err != nil {
+		panic(err)
+	}
+	print(string(newValue))
 }
