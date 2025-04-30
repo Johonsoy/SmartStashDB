@@ -7,6 +7,6 @@ var (
 	ErrorDBClosed      = errors.New("the database is closed")
 	ErrorReadOnlyBatch = errors.New("the read-only batch exists")
 	ErrorBatchCommited = errors.New("the batch commited")
+	ErrorKeyNotFound   = errors.New("key not found")
+	ErrorKeyIsEmpty    = errors.New("the key is empty")
 )
-
-var ErrorKeyIsEmpty = errors.New("the key is empty")

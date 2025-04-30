@@ -117,7 +117,37 @@ func (batch *Batch) commit(w *WriteOptions) error {
 	return nil
 }
 
-func (batch *Batch) Get(bytes []byte) ([]byte, error) {
-	//TODO(johnsoy)
-	return nil, nil
+func (batch *Batch) Get(key []byte) ([]byte, error) {
+	if len(key) == 0 {
+		return nil, _const.ErrorKeyIsEmpty
+	}
+
+	if batch.db.Closed {
+		return nil, _const.ErrorDBClosed
+	}
+
+	if batch.pendingWrites != nil {
+		batch.m.RLock()
+		defer batch.m.RUnlock()
+		if record := batch.pendingWrites[string(key)]; record != nil {
+			if record.Type == LogRecordDeleted {
+				return nil, _const.ErrorKeyNotFound
+			}
+			return record.Value, nil
+		}
+	}
+
+	tables := batch.db.getMemTables()
+
+	for _, table := range tables {
+		deleted, value := table.get(key)
+		if deleted {
+			return nil, _const.ErrorKeyNotFound
+		}
+		if len(value) != 0 {
+			return value, nil
+		}
+	}
+
+	return nil, _const.ErrorKeyNotFound
 }

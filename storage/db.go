@@ -79,6 +79,10 @@ func (db *DB) Get(key string) ([]byte, error) {
 	return batch.Get([]byte(key))
 }
 
+func (db *DB) getMemTables() []*MemTable {
+	return db.immutableMem
+}
+
 func OpenDB(options Options) (*DB, error) {
 
 	// Check if file existed.
