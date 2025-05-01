@@ -153,6 +153,37 @@ func (batch *Batch) Get(key []byte) ([]byte, error) {
 }
 
 func (batch *Batch) delete(key []byte) error {
+	if len(key) == 0 {
+		return _const.ErrorKeyIsEmpty
+	}
+
+	if batch.db.Closed {
+		return _const.ErrorDBClosed
+	}
+
+	if batch.pendingWrites != nil {
+		batch.m.RLock()
+		defer batch.m.RUnlock()
+		if record := batch.pendingWrites[string(key)]; record != nil {
+			if record.Type == LogRecordDeleted {
+				return nil
+			}
+			record.Type = LogRecordDeleted
+			return nil
+		}
+	}
+
+	tables := batch.db.getMemTables()
+
+	for _, table := range tables {
+		deleted, value := table.get(key)
+		if deleted {
+			return nil
+		}
+		if len(value) != 0 {
+			//todo
+		}
+	}
 
 	return nil
 }
