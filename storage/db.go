@@ -84,7 +84,7 @@ func (db *DB) getMemTables() []*MemTable {
 	return db.immutableMem
 }
 
-func (db *DB) Delete(key []byte) error {
+func (db *DB) Delete(key []byte, options *WriteOptions) error {
 	if len(key) == 0 {
 		return _const.ErrorKeyIsEmpty
 	}
@@ -94,7 +94,11 @@ func (db *DB) Delete(key []byte) error {
 		batch.reset()
 		db.batchPool.Put(batch)
 	}()
-	return batch.delete(key)
+	if err := batch.delete(key); err != nil {
+		batch.unLock()
+		return err
+	}
+	return batch.commit(options)
 }
 
 func OpenDB(options Options) (*DB, error) {

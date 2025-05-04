@@ -161,29 +161,14 @@ func (batch *Batch) delete(key []byte) error {
 		return _const.ErrorDBClosed
 	}
 
-	if batch.pendingWrites != nil {
-		batch.m.RLock()
-		defer batch.m.RUnlock()
-		if record := batch.pendingWrites[string(key)]; record != nil {
-			if record.Type == LogRecordDeleted {
-				return nil
-			}
-			record.Type = LogRecordDeleted
-			return nil
-		}
+	if batch.options.ReadOnly {
+		return _const.ErrorReadOnlyBatch
 	}
-
-	tables := batch.db.getMemTables()
-
-	for _, table := range tables {
-		deleted, value := table.get(key)
-		if deleted {
-			return nil
-		}
-		if len(value) != 0 {
-			//todo
-		}
+	batch.m.Lock()
+	batch.pendingWrites[string(key)] = &LogRecord{
+		Key:  key,
+		Type: LogRecordDeleted,
 	}
-
+	batch.m.Unlock()
 	return nil
 }
