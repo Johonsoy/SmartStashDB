@@ -10,7 +10,10 @@ const (
 const (
 	// 单个Block 32KB
 	BlockSize = 32 * KB
-	//blockSize = 10 * B
+)
+
+const (
+	ChunkHeadSize = 7
 )
 
 func ExecDir() string {
