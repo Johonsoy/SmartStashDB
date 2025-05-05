@@ -18,8 +18,7 @@ type DB struct {
 	activeMem    *MemTable   // Active memory
 	immutableMem []*MemTable // Immutable memory
 	Closed       bool
-
-	batchPool sync.Pool
+	batchPool    sync.Pool
 }
 
 func (db *DB) Close() error {
