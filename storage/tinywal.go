@@ -41,5 +41,6 @@ func (w *TinyWAL) Sync() error {
 }
 
 func (w *TinyWAL) maxWriteSize(size int64) {
+	//TODO
 	return int64(_const.ChunkHeadSize + _const.Delta + (_const.Delta/_const.BlockSize+1)*_const.ChunkHeadSize)
 }
