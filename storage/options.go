@@ -6,11 +6,12 @@ import (
 )
 
 type Options struct {
-	DirPath      string
-	MemTableSize uint32
-	Sync         bool
-	BytesPerSync uint32
-	BlockCache   uint32
+	DirPath        string
+	MemTableSize   uint32
+	segmentFileExt string
+	Sync           bool
+	BytesPerSync   uint32
+	BlockCache     uint32
 }
 
 type BatchOptions struct {

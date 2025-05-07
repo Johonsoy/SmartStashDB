@@ -1,6 +1,8 @@
 package _const
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	ErrDatabaseIsUsing = errors.New("the database directory is used by another process")
@@ -9,4 +11,5 @@ var (
 	ErrorBatchCommited = errors.New("the batch commited")
 	ErrorKeyNotFound   = errors.New("key not found")
 	ErrorKeyIsEmpty    = errors.New("the key is empty")
+	ErrorFileExtError  = errors.New("segmentFileExt must not start with '.'")
 )

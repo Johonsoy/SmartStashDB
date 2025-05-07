@@ -3,7 +3,11 @@ package storage
 import (
 	_const "SmartStashDB/const"
 	"SmartStashDB/tinywal"
+	"errors"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"io/fs"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -22,6 +26,36 @@ type TinyWAL struct {
 
 func (w *TinyWAL) close() error {
 	return nil
+}
+
+func OpenTinyWAL(option Options) (*TinyWAL, error) {
+	if strings.HasPrefix(option.segmentFileExt, ".") {
+		return nil, errors.New(option.segmentFileExt + " is not allowed")
+	}
+
+	err := os.MkdirAll(option.DirPath, fs.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
+	tinyWAL := &TinyWAL{
+		option:           option,
+		immutableSegment: make(map[SegmentFileId]*tinywal.SegmentFile),
+		activeSegment:    nil,
+	}
+
+	if option.BlockCache > 0 {
+		blockNum := option.BlockCache / _const.BlockSize
+		if option.BlockCache%_const.BlockSize != 0 {
+			blockNum++
+		}
+		tinyWAL.localCache, err = lru.New[uint64, []byte](int(blockNum))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return tinyWAL, nil
 }
 
 func (w *TinyWAL) PendingWrites(data []byte) error {
