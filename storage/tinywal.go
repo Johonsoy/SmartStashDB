@@ -40,7 +40,9 @@ func (w *TinyWAL) Sync() error {
 	return nil
 }
 
-func (w *TinyWAL) maxWriteSize(size int64) {
-	//TODO
-	return int64(_const.ChunkHeadSize + _const.Delta + (_const.Delta/_const.BlockSize+1)*_const.ChunkHeadSize)
+func (w *TinyWAL) maxWriteSize(size int64) int64 {
+	chunks := (size + _const.BlockSize - 1) / _const.BlockSize // 计算正确的块数（向上取整）
+	total := chunks * _const.ChunkHeadSize                     // 总块头大小
+	newHeadSize := _const.ChunkHeadSize + size                 // 基础头+数据大小
+	return newHeadSize + total
 }
