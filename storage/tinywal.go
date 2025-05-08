@@ -8,6 +8,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"io/fs"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -76,7 +77,25 @@ func OpenTinyWAL(option Options) (*TinyWAL, error) {
 	}
 
 	if len(segmentFileIds) == 0 {
-		openSegmentFile(option.DirPath, option.segmentFileExt, _const.FirstSegmentFileId, tinyWAL.localCache)
+		segment, err := openSegmentFile(option.DirPath, option.segmentFileExt, _const.FirstSegmentFileId, tinyWAL.localCache)
+
+		if err != nil {
+			return nil, err
+		}
+		tinyWAL.activeSegment = segment
+	} else {
+		sort.Ints(segmentFileIds)
+		for i, fileId := range segmentFileIds {
+			segment, err := openSegmentFile(option.DirPath, option.segmentFileExt, uint32(fileId), tinyWAL.localCache)
+			if err != nil {
+				return nil, err
+			}
+			if i == len(segmentFileIds)-1 {
+				tinyWAL.activeSegment = segment
+			} else {
+				tinyWAL.immutableSegment[uint32(fileId)] = segment
+			}
+		}
 	}
 
 	return tinyWAL, nil
