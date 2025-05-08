@@ -14,7 +14,7 @@ import (
 )
 
 type TinyWAL struct {
-	option           Options
+	option           WalOptions
 	mutex            sync.RWMutex
 	activeSegment    *tinywal.SegmentFile
 	immutableSegment map[SegmentFileId]*tinywal.SegmentFile
@@ -30,7 +30,7 @@ func (w *TinyWAL) close() error {
 	return nil
 }
 
-func OpenTinyWAL(option Options) (*TinyWAL, error) {
+func OpenTinyWAL(option WalOptions) (*TinyWAL, error) {
 	if strings.HasPrefix(option.segmentFileExt, ".") {
 		return nil, errors.New(option.segmentFileExt + " is not allowed")
 	}
@@ -122,4 +122,8 @@ func (w *TinyWAL) maxWriteSize(size int64) int64 {
 	total := chunks * _const.ChunkHeadSize                     // 总块头大小
 	newHeadSize := _const.ChunkHeadSize + size                 // 基础头+数据大小
 	return newHeadSize + total
+}
+
+func (w *TinyWAL) NewReader() *_const.Reader {
+
 }

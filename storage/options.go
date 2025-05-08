@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-type Options struct {
+type WalOptions struct {
 	DirPath        string
 	MemTableSize   uint32
 	segmentFileExt string
@@ -19,7 +19,7 @@ type BatchOptions struct {
 	Sync     bool
 }
 
-var DefaultOptions = Options{
+var DefaultOptions = WalOptions{
 	DirPath:      tempDBDir(),
 	MemTableSize: 64 * _const.MB,
 	BlockCache:   0,

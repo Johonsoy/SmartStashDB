@@ -5,6 +5,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/dgraph-io/badger/skl"
 	"github.com/dgraph-io/badger/y"
+	"math"
 	"os"
 	"sort"
 	"sync"
@@ -30,12 +31,12 @@ type memTableOptions struct {
 	sklMemSize      uint32 // skip-list memory size.
 	id              int    // skip-list memory id.
 	walDir          string // file dir.
-	walCacheSize    int    // wal cache size.
+	walCacheSize    uint32 // wal cache size.
 	walIsSync       bool   // whether to flush the disk immediately.
 	walBytesPerSync uint32 // how bytes to flush the disk.
 }
 
-func openAllMemTables(options Options) ([]*MemTable, error) {
+func openAllMemTables(options WalOptions) ([]*MemTable, error) {
 	dir, err := os.ReadDir(options.DirPath)
 	if err != nil {
 		return nil, err
@@ -82,14 +83,35 @@ func openAllMemTables(options Options) ([]*MemTable, error) {
 	return tables, nil
 }
 
-func openMemTable(options memTableOptions) (*MemTable, error) {
-	skipList := skl.NewSkiplist(int64(options.sklMemSize * 2))
+func openMemTable(option memTableOptions) (*MemTable, error) {
+	skipList := skl.NewSkiplist(int64(option.sklMemSize * 2))
 
 	table := &MemTable{
-		option: options,
+		option: option,
 		skl:    skipList,
 	}
 	//TODO read wal and fill skip list
+	wal, err := OpenTinyWAL(WalOptions{
+		DirPath:        option.walDir,
+		MemTableSize:   math.MaxInt32,
+		segmentFileExt: fmt.Sprintf(walFileExt, option.id),
+		Sync:           option.walIsSync,
+		BytesPerSync:   option.walBytesPerSync,
+		BlockCache:     option.walCacheSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+	table.tinyWal = wal
+
+	indexRecords := make(map[uint64][]*LogRecord)
+
+	reader := wal.NewReader()
+
+	for {
+		reader.Next()
+	}
+
 	return table, nil
 }
 
