@@ -16,6 +16,11 @@ const (
 	ChunkHeadSize = 7
 )
 
+const (
+	FirstSegmentFileId  = 1
+	segmentFileModePerm = 0644
+)
+
 func ExecDir() string {
 
 	return ""

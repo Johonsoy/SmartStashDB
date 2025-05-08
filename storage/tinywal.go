@@ -4,6 +4,7 @@ import (
 	_const "SmartStashDB/const"
 	"SmartStashDB/tinywal"
 	"errors"
+	"fmt"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"io/fs"
 	"os"
@@ -16,7 +17,7 @@ type TinyWAL struct {
 	mutex            sync.RWMutex
 	activeSegment    *tinywal.SegmentFile
 	immutableSegment map[SegmentFileId]*tinywal.SegmentFile
-	localCache       *lru.Cache[uint64, []byte]
+	localCache       *lru.Cache[uint32, []byte]
 	byteWrite        uint64
 
 	pendingWritesLock sync.Mutex
@@ -49,10 +50,33 @@ func OpenTinyWAL(option Options) (*TinyWAL, error) {
 		if option.BlockCache%_const.BlockSize != 0 {
 			blockNum++
 		}
-		tinyWAL.localCache, err = lru.New[uint64, []byte](int(blockNum))
+		tinyWAL.localCache, err = lru.New[uint32, []byte](int(blockNum))
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	dir, err := os.ReadDir(option.DirPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var segmentFileIds []int
+	for _, file := range dir {
+		if file.IsDir() {
+			continue
+		}
+		segmentFileId := 0
+		_, err := fmt.Scanf(file.Name(), "%d"+option.segmentFileExt, &segmentFileId)
+		if err != nil {
+			continue
+		}
+		segmentFileIds = append(segmentFileIds, segmentFileId)
+	}
+
+	if len(segmentFileIds) == 0 {
+		openSegmentFile(option.DirPath, option.segmentFileExt, _const.FirstSegmentFileId, tinyWAL.localCache)
 	}
 
 	return tinyWAL, nil
