@@ -5,6 +5,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/dgraph-io/badger/skl"
 	"github.com/dgraph-io/badger/y"
+	"io"
 	"math"
 	"os"
 	"sort"
@@ -109,7 +110,19 @@ func openMemTable(option memTableOptions) (*MemTable, error) {
 	reader := wal.NewReader()
 
 	for {
-		reader.Next()
+		data, _, err := reader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+
+		record := NewLogRecord()
+		record.Decode(data)
+		if record {
+
+		}
 	}
 
 	return table, nil

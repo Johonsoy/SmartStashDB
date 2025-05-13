@@ -1,6 +1,9 @@
 package _const
 
-import "SmartStashDB/storage"
+import (
+	"SmartStashDB/storage"
+	"io"
+)
 
 type Reader struct {
 	allSegmentReader []*storage.SegmentReader
@@ -8,5 +11,13 @@ type Reader struct {
 }
 
 func (r *Reader) Next() ([]byte, *storage.ChunkPosition, error) {
-	return nil, nil, nil
+	if r.progress >= len(r.allSegmentReader) {
+		return nil, nil, io.EOF
+	}
+	data, chunkPos, err := r.allSegmentReader[r.progress].Next()
+	if err == io.EOF {
+		r.progress++
+		return r.Next()
+	}
+	return data, chunkPos, err
 }

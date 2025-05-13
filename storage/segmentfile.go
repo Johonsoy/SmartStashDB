@@ -26,6 +26,12 @@ type segmentFile struct {
 	localCache *lru.Cache[uint32, []byte]
 }
 
+func (f *segmentFile) readInternal(index uint32, offset uint32) ([]byte, *ChunkPosition, error) {
+
+	//todo
+	return nil, nil, nil
+}
+
 func segmentFileName(dir, ext string, id uint32) string {
 	return filepath.Join(dir, fmt.Sprintf("%010d"+ext, id))
 }
