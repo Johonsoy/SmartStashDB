@@ -7,6 +7,6 @@ type Reader struct {
 	progress         int
 }
 
-func (r *Reader) Next() ([]byte, *ChunkPosition, error) {
+func (r *Reader) Next() ([]byte, *storage.ChunkPosition, error) {
 	return nil, nil, nil
 }
