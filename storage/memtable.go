@@ -91,7 +91,6 @@ func openMemTable(option memTableOptions) (*MemTable, error) {
 		option: option,
 		skl:    skipList,
 	}
-	//TODO read wal and fill skip list
 	wal, err := OpenTinyWAL(WalOptions{
 		DirPath:        option.walDir,
 		MemTableSize:   math.MaxInt32,
@@ -120,8 +119,23 @@ func openMemTable(option memTableOptions) (*MemTable, error) {
 
 		record := NewLogRecord()
 		record.Decode(data)
-		if record {
+		if record.Type == LogRecordBatchEnd {
+			batchId, err := snowflake.ParseBytes(record.Key)
+			if err != nil {
+				return nil, err
+			}
 
+			for _, idxRecord := range indexRecords[uint64(batchId)] {
+				table.skl.Put(y.KeyWithTs(idxRecord.Key, 0),
+					y.ValueStruct{
+						Meta:  idxRecord.Type,
+						Value: idxRecord.Value,
+					})
+			}
+			delete(indexRecords, uint64(batchId))
+
+		} else {
+			indexRecords[record.BatchId] = append(indexRecords[record.BatchId], record)
 		}
 	}
 
