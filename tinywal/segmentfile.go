@@ -2,6 +2,7 @@ package tinywal
 
 import (
 	"SmartStashDB/const"
+	"SmartStashDB/storage"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"os"
@@ -66,4 +67,12 @@ func (sf *SegmentFile) Sync() error {
 		return nil
 	}
 	return sf.fd.Sync()
+}
+
+func (sf *SegmentFile) NewSegmentReader() *storage.SegmentReader {
+	return &storage.SegmentReader{
+		seg:         sf,
+		blockidx:    0,
+		chunkoffset: 0,
+	}
 }
