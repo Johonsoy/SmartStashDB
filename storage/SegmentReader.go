@@ -6,7 +6,7 @@ import (
 )
 
 type SegmentReader struct {
-	seg         *segmentFile
+	seg         *SegmentFile
 	blockidx    uint32
 	chunkoffset uint32
 }
