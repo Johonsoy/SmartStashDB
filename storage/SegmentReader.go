@@ -25,7 +25,8 @@ func (s *SegmentReader) Next() ([]byte, *ChunkPosition, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	curChunk.ChunkSize = nextChunk.BlockIndex*_const.BlockSize + nextChunk.ChunkOffset - (s.chunkoffset*_const.BlockSize + chunkPosition.ChunkOffset)
+	curChunk.ChunkSize = nextChunk.BlockIndex*_const.BlockSize + nextChunk.ChunkOffset -
+		(s.chunkoffset*_const.BlockSize + curChunk.ChunkOffset)
 	s.blockidx = nextChunk.BlockIndex
 	s.chunkoffset = curChunk.ChunkOffset
 	return data, curChunk, nil
