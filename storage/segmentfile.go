@@ -1,6 +1,7 @@
 package storage
 
 import (
+	_const "SmartStashDB/const"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"os"
@@ -27,7 +28,6 @@ type SegmentFile struct {
 
 func (f *SegmentFile) readInternal(index uint32, offset uint32) ([]byte, *ChunkPosition, error) {
 
-	//todo
 	return nil, nil, nil
 }
 
@@ -36,10 +36,26 @@ func segmentFileName(dir, ext string, id uint32) string {
 }
 
 func openSegmentFile(dir string, ext string, id uint32, localCache *lru.Cache[uint32, []byte]) (*SegmentFile, error) {
-	_, err := os.OpenFile(segmentFileName(dir, ext, id), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
-	// TODO
+	fd, err := os.OpenFile(segmentFileName(dir, ext, id), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
 		return nil, err
 	}
-	return nil, err
+	stat, err := fd.Stat()
+
+	if err != nil {
+		err := fd.Close()
+		if err != nil {
+			return nil, err
+		}
+		return nil, err
+	}
+	size := stat.Size()
+	return &SegmentFile{
+		segmentFileId:  id,
+		fd:             fd,
+		lastBlockIndex: uint32(size / _const.BlockSize),
+		lastBlockSize:  uint32(size % _const.BlockSize),
+		header:         make([]byte, _const.ChunkHeadSize),
+		localCache:     localCache,
+	}, nil
 }
