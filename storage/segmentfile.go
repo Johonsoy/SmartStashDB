@@ -31,8 +31,12 @@ func (f *SegmentFile) readInternal(index uint32, offset uint32) ([]byte, *ChunkP
 	return nil, nil, nil
 }
 
-func (f *SegmentFile) NewSegmentReader() *_const.Reader {
-	return nil
+func (f *SegmentFile) NewSegmentReader() *SegmentReader {
+	return &SegmentReader{
+		seg:         f,
+		blockidx:    0,
+		chunkoffset: 0,
+	}
 }
 
 func (f *SegmentFile) Close() error {

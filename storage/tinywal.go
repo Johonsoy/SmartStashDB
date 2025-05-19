@@ -141,8 +141,17 @@ func (w *TinyWAL) maxWriteSize(size int64) int64 {
 func (w *TinyWAL) NewReader() *_const.Reader {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	var readers []*_const.Reader
+	var readers []*SegmentReader
 	for _, segment := range w.immutableSegment {
 		readers = append(readers, segment.NewSegmentReader())
 	}
+	readers = append(readers, w.activeSegment.NewSegmentReader())
+
+	sort.Slice(readers, func(i, j int) bool { return readers[i].seg.segmentFileId < readers[j].seg.segmentFileId })
+
+	return &_const.Reader{
+		AllSegmentReader: readers,
+		Progress:         0,
+	}
+
 }
