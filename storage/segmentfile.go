@@ -31,6 +31,18 @@ func (f *SegmentFile) readInternal(index uint32, offset uint32) ([]byte, *ChunkP
 	return nil, nil, nil
 }
 
+func (f *SegmentFile) NewSegmentReader() *_const.Reader {
+	return nil
+}
+
+func (f *SegmentFile) Close() error {
+	if f.closed {
+		return nil
+	}
+	f.closed = true
+	return f.fd.Close()
+}
+
 func segmentFileName(dir, ext string, id uint32) string {
 	return filepath.Join(dir, fmt.Sprintf("%010d"+ext, id))
 }

@@ -2,7 +2,6 @@ package storage
 
 import (
 	_const "SmartStashDB/const"
-	"SmartStashDB/tinywal"
 	"errors"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -16,8 +15,8 @@ import (
 type TinyWAL struct {
 	option           WalOptions
 	mutex            sync.RWMutex
-	activeSegment    *tinywal.SegmentFile
-	immutableSegment map[SegmentFileId]*tinywal.SegmentFile
+	activeSegment    *SegmentFile
+	immutableSegment map[SegmentFileId]*SegmentFile
 	localCache       *lru.Cache[uint32, []byte]
 	byteWrite        uint64
 
@@ -27,7 +26,22 @@ type TinyWAL struct {
 }
 
 func (w *TinyWAL) close() error {
-	return nil
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	if w.localCache != nil {
+		w.localCache.Purge()
+	}
+
+	for _, segment := range w.immutableSegment {
+		if segment != nil {
+			if err := segment.Close(); err != nil {
+				return err
+			}
+		}
+	}
+	w.immutableSegment = nil
+	return w.activeSegment.Close()
 }
 
 func OpenTinyWAL(option WalOptions) (*TinyWAL, error) {
@@ -42,7 +56,7 @@ func OpenTinyWAL(option WalOptions) (*TinyWAL, error) {
 
 	tinyWAL := &TinyWAL{
 		option:           option,
-		immutableSegment: make(map[SegmentFileId]*tinywal.SegmentFile),
+		immutableSegment: make(map[SegmentFileId]*SegmentFile),
 		activeSegment:    nil,
 	}
 
