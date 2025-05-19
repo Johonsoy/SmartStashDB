@@ -12,4 +12,5 @@ var (
 	ErrorKeyNotFound   = errors.New("key not found")
 	ErrorKeyIsEmpty    = errors.New("the key is empty")
 	ErrorFileExtError  = errors.New("segmentFileExt must not start with '.'")
+	ErrorDataToLarge   = errors.New("data is too large")
 )

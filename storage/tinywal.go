@@ -155,3 +155,54 @@ func (w *TinyWAL) NewReader() *_const.Reader {
 	}
 
 }
+
+func (w *TinyWAL) Write(data []byte) (*ChunkPosition, error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	if w.maxWriteSize(int64(len(data))) > int64(w.option.MemTableSize) {
+		return nil, _const.ErrorDataToLarge
+	}
+
+	if w.isFull(int64(len(data))) {
+		if err := w.replaceActiveSegmentFile(); err != nil {
+			return nil, err
+		}
+	}
+	position, err := w.activeSegment.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	w.byteWrite += uint64(position.ChunkSize)
+
+	isSync := w.option.Sync
+	if !isSync && w.byteWrite > w.option.BytesPerSync {
+		isSync = true
+	}
+	if isSync {
+		err := w.activeSegment.Sync()
+		if err != nil {
+			return nil, err
+		}
+		w.byteWrite = 0
+	}
+	return position, err
+}
+
+func (w *TinyWAL) isFull(delta int64) bool {
+	return w.activeSegment.Size()+w.maxWriteSize(delta) > int64(w.option.MemTableSize)
+}
+
+func (w *TinyWAL) replaceActiveSegmentFile() error {
+	err := w.activeSegment.Sync()
+	if err != nil {
+		return err
+	}
+	w.byteWrite = 0
+	file, err := openSegmentFile(w.option.DirPath, w.option.segmentFileExt, w.activeSegment.segmentFileId+1, w.localCache)
+	if err != nil {
+		return err
+	}
+	w.immutableSegment[w.activeSegment.segmentFileId] = w.activeSegment
+	w.activeSegment = file
+	return nil
+}

@@ -10,7 +10,7 @@ type WalOptions struct {
 	MemTableSize   uint32
 	segmentFileExt string
 	Sync           bool
-	BytesPerSync   uint32
+	BytesPerSync   uint64
 	BlockCache     uint32
 }
 

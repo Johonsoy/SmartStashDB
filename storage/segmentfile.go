@@ -47,6 +47,18 @@ func (f *SegmentFile) Close() error {
 	return f.fd.Close()
 }
 
+func (f *SegmentFile) Size() int64 {
+	return int64(f.lastBlockIndex*_const.BlockSize + f.lastBlockSize)
+}
+
+func (f *SegmentFile) Sync() error {
+	return f.fd.Sync()
+}
+
+func (f *SegmentFile) Write(data []byte) (*ChunkPosition, error) {
+	return nil, nil
+}
+
 func segmentFileName(dir, ext string, id uint32) string {
 	return filepath.Join(dir, fmt.Sprintf("%010d"+ext, id))
 }
