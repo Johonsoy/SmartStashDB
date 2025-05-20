@@ -14,4 +14,5 @@ var (
 	ErrorFileExtError        = errors.New("segmentFileExt must not start with '.'")
 	ErrorDataToLarge         = errors.New("data is too large")
 	ErrorPendingSizeTooLarge = errors.New("pending size is too large")
+	ErrClosed                = errors.New("closed")
 )

@@ -2,6 +2,7 @@ package storage
 
 import (
 	_const "SmartStashDB/const"
+	"bytes"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"os"
@@ -59,7 +60,37 @@ func (f *SegmentFile) Write(data []byte) (*ChunkPosition, error) {
 	return nil, nil
 }
 
-func (f *SegmentFile) WriteAll(writes [][]byte) ([]*ChunkPosition, error) {
+func (f *SegmentFile) WriteAll(writes [][]byte) (position []*ChunkPosition, err error) {
+	if f.closed {
+		return nil, _const.ErrClosed
+	}
+
+	index := f.lastBlockIndex
+	lastBlockSize := f.lastBlockSize
+
+	buffer := DefaultBuffer.Get()
+
+	defer func() {
+		if err != nil {
+			f.lastBlockIndex = index
+			f.lastBlockSize = lastBlockSize
+		}
+		DefaultBuffer.Put(buffer)
+	}()
+
+	positions := make([]*ChunkPosition, len(writes))
+	for i := 0; i < len(positions); i++ {
+		posit, err := f.writeBuffer(writes[i], buffer)
+		if err != nil {
+			return nil, err
+		}
+		positions[i] = posit
+	}
+	//todo write buffer2file
+	return positions, nil
+}
+
+func (f *SegmentFile) writeBuffer(bytes []byte, buffer *bytes.Buffer) (*ChunkPosition, error) {
 	return nil, nil
 }
 
