@@ -123,12 +123,38 @@ func (w *TinyWAL) PendingWrites(data []byte) error {
 	return nil
 }
 
-func (w *TinyWAL) WriteAll() error {
-	return nil
+func (w *TinyWAL) WriteAll() ([]*ChunkPosition, error) {
+	if len(w.pendingWrites) == 0 {
+		return make([]*ChunkPosition, 0), nil
+	}
+	w.mutex.Lock()
+	defer func() {
+		w.ClearPendingWrites()
+		w.mutex.Unlock()
+	}()
+
+	if w.pendingWritesSize > w.option.MemTableSize {
+		return nil, _const.ErrorPendingSizeTooLarge
+	}
+
+	if uint64(w.activeSegment.Size())+w.pendingWritesSize > w.option.MemTableSize {
+		err := w.replaceActiveSegmentFile()
+		if err != nil {
+			return nil, err
+		}
+	}
+	all, err := w.activeSegment.WriteAll(w.pendingWrites)
+	if err != nil {
+		return nil, err
+	}
+	return all, nil
 }
 
 func (w *TinyWAL) Sync() error {
-	return nil
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	return w.activeSegment.Sync()
 }
 
 func (w *TinyWAL) maxWriteSize(size int64) int64 {
@@ -205,4 +231,8 @@ func (w *TinyWAL) replaceActiveSegmentFile() error {
 	w.immutableSegment[w.activeSegment.segmentFileId] = w.activeSegment
 	w.activeSegment = file
 	return nil
+}
+
+func (w *TinyWAL) ClearPendingWrites() {
+
 }

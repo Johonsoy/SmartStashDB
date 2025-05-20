@@ -7,7 +7,7 @@ import (
 
 type WalOptions struct {
 	DirPath        string
-	MemTableSize   uint32
+	MemTableSize   uint64
 	segmentFileExt string
 	Sync           bool
 	BytesPerSync   uint64

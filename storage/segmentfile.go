@@ -59,6 +59,10 @@ func (f *SegmentFile) Write(data []byte) (*ChunkPosition, error) {
 	return nil, nil
 }
 
+func (f *SegmentFile) WriteAll(writes [][]byte) ([]*ChunkPosition, error) {
+	return nil, nil
+}
+
 func segmentFileName(dir, ext string, id uint32) string {
 	return filepath.Join(dir, fmt.Sprintf("%010d"+ext, id))
 }
