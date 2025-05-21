@@ -86,12 +86,26 @@ func (f *SegmentFile) WriteAll(writes [][]byte) (position []*ChunkPosition, err 
 		}
 		positions[i] = posit
 	}
-	//todo write buffer2file
+	err = f.writeBuffer2File(buffer)
+	if err != nil {
+		return nil, err
+	}
 	return positions, nil
 }
 
 func (f *SegmentFile) writeBuffer(bytes []byte, buffer *bytes.Buffer) (*ChunkPosition, error) {
 	return nil, nil
+}
+
+func (f *SegmentFile) writeBuffer2File(buffer *bytes.Buffer) error {
+	if f.lastBlockSize > _const.BlockSize {
+		panic("can not exceed the block size")
+	}
+	_, err := f.fd.Write(buffer.Bytes())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func segmentFileName(dir, ext string, id uint32) string {
