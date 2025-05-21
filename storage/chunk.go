@@ -1,5 +1,14 @@
 package storage
 
+type ChunkType = byte
+
+const (
+	ChunkTypeFull ChunkType = iota
+	ChunkTypeStart
+	ChunkTypeMiddle
+	ChunkTypeEnd
+)
+
 type ChunkPosition struct {
 	SegmentFileId SegmentFileId
 	BlockIndex    uint32

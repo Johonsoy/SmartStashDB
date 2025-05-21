@@ -94,6 +94,66 @@ func (f *SegmentFile) WriteAll(writes [][]byte) (position []*ChunkPosition, err 
 }
 
 func (f *SegmentFile) writeBuffer(bytes []byte, buffer *bytes.Buffer) (*ChunkPosition, error) {
+	if f.closed {
+		return nil, _const.ErrClosed
+	}
+
+	padding := uint32(0)
+
+	if f.lastBlockSize+_const.ChunkHeadSize >= _const.BlockSize {
+		size := _const.BlockSize - f.lastBlockSize
+		_, err := buffer.Write(make([]byte, size))
+		if err != nil {
+			return nil, err
+		}
+		padding += size
+		f.lastBlockIndex++
+		f.lastBlockSize = 0
+	}
+
+	position := &ChunkPosition{
+		SegmentFileId: f.segmentFileId,
+		BlockIndex:    f.lastBlockIndex,
+		ChunkOffset:   f.lastBlockSize,
+	}
+
+	dataLen := uint32(len(bytes))
+
+	if f.lastBlockSize+_const.ChunkHeadSize <= _const.BlockSize {
+		err := f.appendChunk2Buffer(buffer, bytes, ChunkTypeFull)
+		if err != nil {
+			return nil, err
+		}
+		position.ChunkSize = dataLen + _const.ChunkHeadSize
+	} else {
+		//split data to many chunk
+		var (
+			leftSize            = dataLen
+			curBlockSize        = f.lastBlockSize
+			chunkNum     uint32 = 0
+		)
+
+		for leftSize > 0 {
+			chunkType := ChunkTypeMiddle
+			if leftSize == dataLen {
+				chunkType = ChunkTypeStart
+			}
+			freeSize := _const.BlockSize - curBlockSize - _const.ChunkHeadSize
+			if freeSize >= leftSize {
+				freeSize = leftSize
+				chunkType = ChunkTypeEnd
+			}
+			err := f.appendChunk2Buffer(buffer, bytes[dataLen-leftSize:dataLen-leftSize+freeSize], chunkType)
+			if err != nil {
+				return nil, err
+			}
+			chunkNum++
+			leftSize -= freeSize
+			curBlockSize = (curBlockSize + _const.ChunkHeadSize + freeSize) % _const.BlockSize
+		}
+		position.ChunkSize = chunkNum*_const.ChunkHeadSize + dataLen
+	}
+
 	return nil, nil
 }
 
@@ -105,6 +165,10 @@ func (f *SegmentFile) writeBuffer2File(buffer *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (f *SegmentFile) appendChunk2Buffer(buffer *bytes.Buffer, b []byte, full ChunkType) error {
 	return nil
 }
 
