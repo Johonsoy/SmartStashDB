@@ -3,8 +3,10 @@ package storage
 import (
 	_const "SmartStashDB/const"
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"hash/crc32"
 	"os"
 	"path/filepath"
 )
@@ -57,7 +59,30 @@ func (f *SegmentFile) Sync() error {
 }
 
 func (f *SegmentFile) Write(data []byte) (*ChunkPosition, error) {
-	return nil, nil
+	if f.closed {
+		return nil, _const.ErrClosed
+	}
+	index := f.lastBlockIndex
+	size := f.lastBlockSize
+
+	var err error
+	buffer := DefaultBuffer.Get()
+	defer func() {
+		if err != nil {
+			f.lastBlockIndex = index
+			f.lastBlockSize = size
+		}
+		DefaultBuffer.Put(buffer)
+	}()
+	writeBuffer, err := f.writeBuffer(data, buffer)
+	if err != nil {
+		return nil, err
+	}
+	err = f.writeBuffer2File(buffer)
+	if err != nil {
+		return nil, err
+	}
+	return writeBuffer, nil
 }
 
 func (f *SegmentFile) WriteAll(writes [][]byte) (position []*ChunkPosition, err error) {
@@ -79,15 +104,15 @@ func (f *SegmentFile) WriteAll(writes [][]byte) (position []*ChunkPosition, err 
 	}()
 
 	positions := make([]*ChunkPosition, len(writes))
-	for i := 0; i < len(positions); i++ {
-		posit, err := f.writeBuffer(writes[i], buffer)
+	for i, data := range writes {
+		pos, err := f.writeBuffer(data, buffer)
 		if err != nil {
 			return nil, err
 		}
-		positions[i] = posit
+		positions[i] = pos
 	}
-	err = f.writeBuffer2File(buffer)
-	if err != nil {
+
+	if err := f.writeBuffer2File(buffer); err != nil {
 		return nil, err
 	}
 	return positions, nil
@@ -159,16 +184,32 @@ func (f *SegmentFile) writeBuffer(bytes []byte, buffer *bytes.Buffer) (*ChunkPos
 
 func (f *SegmentFile) writeBuffer2File(buffer *bytes.Buffer) error {
 	if f.lastBlockSize > _const.BlockSize {
-		panic("can not exceed the block size")
+		panic("lastBlockSize exceeded BlockSize")
 	}
 	_, err := f.fd.Write(buffer.Bytes())
+	return err
+}
+
+func (f *SegmentFile) appendChunk2Buffer(buffer *bytes.Buffer, data []byte, cType ChunkType) error {
+	// 设置header中的长度
+	binary.LittleEndian.PutUint16(f.header[4:6], uint16(len(data)))
+	// 设置header中的类型
+	f.header[6] = cType
+
+	// 对 len + type + data 求 checksum
+	sum := crc32.ChecksumIEEE(f.header[4:])
+	sum = crc32.Update(sum, crc32.IEEETable, data)
+	// 设置header中的校验和
+	binary.LittleEndian.PutUint32(f.header[:4], sum)
+	//将一个完整的chunk写入buf中（header + payload 就是一个chunk）
+	_, err := buffer.Write(f.header[:])
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (f *SegmentFile) appendChunk2Buffer(buffer *bytes.Buffer, b []byte, full ChunkType) error {
+	_, err = buffer.Write(data)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -177,19 +218,22 @@ func segmentFileName(dir, ext string, id uint32) string {
 }
 
 func openSegmentFile(dir string, ext string, id uint32, localCache *lru.Cache[uint32, []byte]) (*SegmentFile, error) {
-	fd, err := os.OpenFile(segmentFileName(dir, ext, id), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	path := segmentFileName(dir, ext, id)
+	fd, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
 		return nil, err
 	}
-	stat, err := fd.Stat()
-
-	if err != nil {
-		err := fd.Close()
+	defer func() {
 		if err != nil {
-			return nil, err
+			_ = fd.Close()
 		}
+	}()
+
+	stat, err := fd.Stat()
+	if err != nil {
 		return nil, err
 	}
+
 	size := stat.Size()
 	return &SegmentFile{
 		segmentFileId:  id,
